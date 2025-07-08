@@ -1,5 +1,6 @@
 import yfinance as yf
-from app.models import StockInput, StockAnalysis
+
+from app.models import StockAnalysis, StockInput
 
 
 def get_stock_info(stock: StockInput) -> StockAnalysis:

@@ -1,12 +1,12 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import StreamingResponse
-from app.utils.csv_parser import parse_csv
-from app.services.stock_data import get_stock_info
-from app.services.performance import build_portfolio_value
-from app.utils.plot import plot_portfolio
-from app.models import PortfolioAnalysisResponse
-from app.services.recommend import recommend_similar_stocks
 
+from app.models import PortfolioAnalysisResponse
+from app.services.performance import build_portfolio_value
+from app.services.recommend import recommend_similar_stocks
+from app.services.stock_data import get_stock_info
+from app.utils.csv_parser import parse_csv
+from app.utils.plot import plot_portfolio
 
 router = APIRouter()
 
@@ -18,10 +18,7 @@ async def analyze_portfolio(file: UploadFile = File(...)):
     results = [get_stock_info(stock) for stock in portfolio]
     total_value = sum(stock.total_value for stock in results)
 
-    return PortfolioAnalysisResponse(
-        total_portfolio_value=total_value,
-        stocks=results
-    )
+    return PortfolioAnalysisResponse(total_portfolio_value=total_value, stocks=results)
 
 
 @router.post("/performance-plot")

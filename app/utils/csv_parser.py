@@ -1,7 +1,9 @@
-import pandas as pd
 from typing import List
-from app.models import StockInput
+
+import pandas as pd
 from fastapi import UploadFile
+
+from app.models import StockInput
 
 
 async def parse_csv(file: UploadFile) -> List[StockInput]:

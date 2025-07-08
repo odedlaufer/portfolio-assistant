@@ -1,8 +1,10 @@
-import yfinance as yf
-import pandas as pd
 from datetime import datetime, timedelta
-from app.models import StockInput
 from typing import List
+
+import pandas as pd
+import yfinance as yf
+
+from app.models import StockInput
 
 
 def fetch_historical_values(stock: StockInput, start_date, end_date) -> pd.DataFrame:
@@ -32,7 +34,7 @@ def build_portfolio_value(portfolio: List[StockInput], days_back=180) -> pd.Data
             total_df = stock_df
         else:
             total_df = total_df.join(stock_df, how="outer")
-    
+
     total_df.fillna(0, inplace=True)
     total_df["TotalValue"] = total_df.sum(axis=1)
     return total_df
