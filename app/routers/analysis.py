@@ -1,13 +1,11 @@
-import io
-
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
 from app.models import PortfolioAnalysisResponse
 from app.services.export import export_analysis
-from app.services.pdf_export import generate_pdf
 from app.services.performance import build_portfolio_value
 from app.services.recommend import recommend_similar_stocks
+from app.services.report_generator import generate_analysis_report
 from app.services.stock_data import get_stock_info
 from app.utils.csv_parser import parse_csv
 from app.utils.error_handler import safe_call
@@ -58,9 +56,6 @@ async def performance_plot(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Failed to generate plot.")
 
     return StreamingResponse(img_buffer, media_type="image/png")
-    # df = build_portfolio_value(portfolio)
-    # plot_buf = plot_portfolio(df)
-    # return StreamingResponse(plot_buf, media_type="image/png")
 
 
 @router.post("/recommend")
@@ -77,9 +72,18 @@ async def export(file: UploadFile = File(...)):
     return result
 
 
-@router.post("/export/pdf")
+@router.post("/export/pdf", deprecated=True)
 async def export_pdf(file: UploadFile = File(...)):
-    portfolio = await parse_csv(file)
-    analysis = export_analysis(portfolio)
-    pdf_bytes = generate_pdf(analysis)
-    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+    raise HTTPException(
+        status_code=410, detail="Endpoint is deprecated - use /generate-report"
+    )
+
+
+@router.post("/analyze-report")
+async def anaylze_report(file: UploadFile = File(...)):
+    pdf_bytes = await generate_analysis_report(file)
+    return StreamingResponse(
+        pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=portfolio_report.pdf"},
+    )

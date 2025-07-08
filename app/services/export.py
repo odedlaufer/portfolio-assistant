@@ -1,6 +1,6 @@
 from app.models import StockInput
-from app.services.stock_data import get_stock_info
 from app.services.recommend import recommend_similar_stocks
+from app.services.stock_data import get_stock_info
 
 
 def export_analysis(portfolio: list[StockInput]) -> dict:
@@ -11,7 +11,7 @@ def export_analysis(portfolio: list[StockInput]) -> dict:
     return {
         "portfolio": {
             "total_value": total_value,
-            "stocks": [stock.dict() for stock in results]
+            "stocks": [stock.dict() for stock in results],
         },
         "recommendations": recommendations,
     }
