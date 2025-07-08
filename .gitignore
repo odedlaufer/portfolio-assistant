@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# System
+.DS_Store
+
+# Data
+*.csv
+*.sqlite
+*.db
+
+# Plot outputs
+*.png
+
+# Pre-commit
+.pre-commit-config.yaml
+.cache/
