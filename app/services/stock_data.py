@@ -7,8 +7,12 @@ def get_stock_info(stock: StockInput) -> StockAnalysis:
     ticker = yf.Ticker(stock.symbol)
     info = ticker.info
 
-    current_price = info.get("currentPrice", 0.0)
-    company_name = info.get("shortName", "N/A")
+    current_price = info.get("currentPrice")
+    company_name = info.get("shortName")
+
+    if current_price is None or company_name is None:
+        raise ValueError(f"Invalid stock data for symbol: {stock.symbol}")
+
     sector = info.get("sector", "N/A")
     full_summary = info.get("longBusinessSummary", "N/A")
     summary = full_summary[:300] + "..." if len(full_summary) > 300 else full_summary

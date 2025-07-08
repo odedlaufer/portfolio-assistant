@@ -1,34 +1,66 @@
-from fastapi import APIRouter, File, UploadFile
+import io
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+
 from app.models import PortfolioAnalysisResponse
+from app.services.export import export_analysis
+from app.services.pdf_export import generate_pdf
 from app.services.performance import build_portfolio_value
 from app.services.recommend import recommend_similar_stocks
 from app.services.stock_data import get_stock_info
-from app.services.export import export_analysis
-from app.services.pdf_export import generate_pdf
 from app.utils.csv_parser import parse_csv
+from app.utils.error_handler import safe_call
 from app.utils.plot import plot_portfolio
-import io
 
 router = APIRouter()
 
 
 @router.post("/analyze", response_model=PortfolioAnalysisResponse)
 async def analyze_portfolio(file: UploadFile = File(...)):
-    portfolio = await parse_csv(file)
+    try:
+        portfolio = await parse_csv(file)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"CSV parsing failed: {str(e)}")
 
-    results = [get_stock_info(stock) for stock in portfolio]
+    results = []
+    for stock in portfolio:
+        result = safe_call(
+            lambda: get_stock_info(stock), context=f"get_stock_info: {stock.symbol}"
+        )
+        if result:
+            results.append(result)
+
+    if not results:
+        raise HTTPException(
+            status_code=400, detail="No valid stock data found in file."
+        )
+
     total_value = sum(stock.total_value for stock in results)
-
     return PortfolioAnalysisResponse(total_portfolio_value=total_value, stocks=results)
 
 
 @router.post("/performance-plot")
 async def performance_plot(file: UploadFile = File(...)):
-    portfolio = await parse_csv(file)
-    df = build_portfolio_value(portfolio)
-    plot_buf = plot_portfolio(df)
-    return StreamingResponse(plot_buf, media_type="image/png")
+    try:
+        portfolio = await parse_csv(file)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"CSV parsing failed: {str(e)}")
+
+    values = safe_call(
+        lambda: build_portfolio_value(portfolio), context="build_protfolio_value"
+    )
+    if values is None:
+        raise HTTPException(status_code=500, detail="Failed to build portfolio values")
+
+    img_buffer = safe_call(lambda: plot_portfolio(values), context="plot_portfolio")
+    if img_buffer is None:
+        raise HTTPException(status_code=500, detail="Failed to generate plot.")
+
+    return StreamingResponse(img_buffer, media_type="image/png")
+    # df = build_portfolio_value(portfolio)
+    # plot_buf = plot_portfolio(df)
+    # return StreamingResponse(plot_buf, media_type="image/png")
 
 
 @router.post("/recommend")
