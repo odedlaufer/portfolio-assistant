@@ -1,5 +1,7 @@
+from typing import Any, Dict
+
 from fpdf import FPDF
-from typing import Dict, Any
+
 from app.utils.text import ascii_only
 
 
@@ -25,7 +27,12 @@ def generate_pdf(portfolio: Dict[str, Any]) -> bytes:
 
     for stock in portfolio["portfolio"]["stocks"]:
         pdf.ln(5)
-        pdf.cell(200, 10, txt=f"{stock['symbol']} - {ascii_only(stock['company_name'])}", ln=True)
+        pdf.cell(
+            200,
+            10,
+            txt=f"{stock['symbol']} - {ascii_only(stock['company_name'])}",
+            ln=True,
+        )
         pdf.cell(200, 10, txt=f"Sector: {ascii_only(stock['sector'])}", ln=True)
         pdf.cell(200, 10, txt=f"Current Price: ${stock['current_price']}", ln=True)
         pdf.cell(200, 10, txt=f"Total Value: ${stock['total_value']}", ln=True)

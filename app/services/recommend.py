@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 import pandas as pd
 import yfinance as yf
@@ -14,44 +14,46 @@ def trim_summary(text: str) -> str:
     return text[:MAX_SUMMARY_LENGTH] + "..." if len(text) > MAX_SUMMARY_LENGTH else text
 
 
-def recommend_similar_stocks(
-    portfolio: List[StockInput], candidate_file: str = "data/candidate_stocks.csv"
-):
-    candidates = pd.read_csv(candidate_file)["symbol"].tolist()
-    recommendations = {}
+def recommend_for_stock(
+    symbol: str, candidate_file: str = "data/candidate_stocks.csv"
+) -> List[dict]:
+    try:
+        stock_info = yf.Ticker(symbol).info
+        sector = stock_info.get("sector", None)
+        beta = stock_info.get("beta", None)
+    except Exception:
+        return []
 
-    for stock in portfolio:
+    if not sector or beta is None:
+        return []
+
+    candidates = pd.read_csv(candidate_file)["symbol"].tolist()
+    similar = []
+
+    for candidate in candidates:
+        if candidate == symbol:
+            continue
         try:
-            stock_info = yf.Ticker(stock.symbol).info
-            sector = stock_info.get("sector", None)
-            beta = stock_info.get("beta", None)
+            info = yf.Ticker(candidate).info
+            if info.get("sector") == sector and info.get("beta") is not None:
+                similar.append(
+                    {
+                        "symbol": candidate,
+                        "beta": info["beta"],
+                        "summary": trim_summary(info.get("longBusinessSummary", "")),
+                    }
+                )
         except Exception:
             continue
 
-        if not sector or beta is None:
-            continue
+    similar_sorted = sorted(similar, key=lambda x: abs(x["beta"] - beta))
+    return similar_sorted[:2]
 
-        similar = []
-        for symbol in candidates:
-            if symbol == stock.symbol:
-                continue
 
-            try:
-                info = yf.Ticker(symbol).info
-                if info.get("sector") == sector and info.get("beta") is not None:
-                    similar.append(
-                        {
-                            "symbol": symbol,
-                            "beta": info["beta"],
-                            "summary": trim_summary(
-                                info.get("longBusinessSummary", "")
-                            ),
-                        }
-                    )
-            except Exception:
-                continue
-
-        similar_sorted = sorted(similar, key=lambda x: abs(x["beta"] - beta))
-        recommendations[stock.symbol] = similar_sorted[:2]
-
-    return recommendations
+def recommend_similar_stocks(
+    portfolio: List[StockInput], candidate_file: str = "data/candidate_stocks.csv"
+) -> Dict[str, List[dict]]:
+    return {
+        stock.symbol: recommend_for_stock(stock.symbol, candidate_file)
+        for stock in portfolio
+    }
