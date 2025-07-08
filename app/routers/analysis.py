@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Request, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import StreamingResponse
 from app.models import PortfolioAnalysisResponse
 from app.services.performance import build_portfolio_value
