@@ -22,6 +22,3 @@ venv/
 # Plot outputs
 *.png
 
-# Pre-commit
-.pre-commit-config.yaml
-.cache/
