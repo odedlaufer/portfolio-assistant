@@ -3,22 +3,32 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Virtual Environments
 .venv/
 venv/
-.env
+env/
+ENV/
+*.env
+
+# FastAPI/Database
+*.sqlite3
+*.sqlite
+*.db
 
 # IDEs
 .vscode/
 .idea/
 
-# System
+# OS files
 .DS_Store
 
-# Data
+# Data & Outputs
 *.csv
-*.sqlite
-*.db
-
-# Plot outputs
+*.log
 *.png
 
+# Test artifacts
+*.pytest_cache/
+.coverage
+htmlcov/

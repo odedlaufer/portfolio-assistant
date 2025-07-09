@@ -1,6 +1,10 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 
+from app.db import crud
+from app.db.database import get_db
+from app.db.schemas import PortfolioCreate, StockCreate
 from app.models import PortfolioAnalysisResponse
 from app.services.export import export_analysis
 from app.services.performance import build_portfolio_value
@@ -15,7 +19,9 @@ router = APIRouter()
 
 
 @router.post("/analyze", response_model=PortfolioAnalysisResponse)
-async def analyze_portfolio(file: UploadFile = File(...)):
+async def analyze_portfolio(
+    file: UploadFile = File(...), save: bool = False, db: Session = Depends(get_db)
+):
     try:
         portfolio = await parse_csv(file)
     except Exception as e:
@@ -35,6 +41,24 @@ async def analyze_portfolio(file: UploadFile = File(...)):
         )
 
     total_value = sum(stock.total_value for stock in results)
+
+    if save:
+        enriched = [
+            {
+                **stock.dict(),
+                "percentage_of_portfolio": round(
+                    stock.total_value / total_value * 100, 2
+                ),
+            }
+            for stock in results
+        ]
+
+        # Create and save to DB
+        portfolio_data = PortfolioCreate(
+            name="Untitled Portfolio", stocks=[StockCreate(**s) for s in enriched]
+        )
+        crud.create_portfolio(db, portfolio_data)
+
     return PortfolioAnalysisResponse(total_portfolio_value=total_value, stocks=results)
 
 
