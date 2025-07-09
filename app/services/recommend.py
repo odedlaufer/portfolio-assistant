@@ -1,9 +1,9 @@
 from typing import Dict, List
 
-import pandas as pd
 import yfinance as yf
 
 from app.models import StockInput
+from app.utils.dynamic_candidates import get_nasdaq_100_tickers
 
 MAX_SUMMARY_LENGTH = 300
 
@@ -14,9 +14,7 @@ def trim_summary(text: str) -> str:
     return text[:MAX_SUMMARY_LENGTH] + "..." if len(text) > MAX_SUMMARY_LENGTH else text
 
 
-def recommend_for_stock(
-    symbol: str, candidate_file: str = "data/candidate_stocks.csv"
-) -> List[dict]:
+def recommend_for_stock(symbol: str, candidates: List[str]) -> List[dict]:
     try:
         stock_info = yf.Ticker(symbol).info
         sector = stock_info.get("sector", None)
@@ -27,9 +25,7 @@ def recommend_for_stock(
     if not sector or beta is None:
         return []
 
-    candidates = pd.read_csv(candidate_file)["symbol"].tolist()
     similar = []
-
     for candidate in candidates:
         if candidate == symbol:
             continue
@@ -50,10 +46,19 @@ def recommend_for_stock(
     return similar_sorted[:2]
 
 
-def recommend_similar_stocks(
-    portfolio: List[StockInput], candidate_file: str = "data/candidate_stocks.csv"
-) -> Dict[str, List[dict]]:
+def recommend_similar_stocks(portfolio: List[StockInput]) -> Dict[str, List[dict]]:
+    candidates = get_nasdaq_100_tickers()
+    print(f"Candidate tickers fetched: {len(candidates)} → {candidates[:5]}")
     return {
-        stock.symbol: recommend_for_stock(stock.symbol, candidate_file)
+        stock.symbol: recommend_for_stock(stock.symbol, candidates)
         for stock in portfolio
     }
+
+
+# def recommend_similar_stocks(
+#    portfolio: List[StockInput], candidate_file: str = "data/candidate_stocks.csv"
+# ) -> Dict[str, List[dict]]:
+#    return {
+#        stock.symbol: recommend_for_stock(stock.symbol, candidate_file)
+#        for stock in portfolio
+#    }
